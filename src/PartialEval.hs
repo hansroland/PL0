@@ -1,43 +1,47 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE GADTs #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 -- A Partial Evaluator
 -- The compiler eagerly computes the parts of the program that do not
 --    depend on any inputs, a process known as partial evaluation
 --    (Jones, Gomard, and Sestoft 1993).
+--    See: https://hackmd.io/@gridtools/BJ-tiaCSY
 
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
+-- This interpreter is written in the framework of Oleg Kiselyov.
+--    See: https://okmij.org/ftp/tagless-final/course/optimizations.html
 
-module PartialEval where
+-- Operations with multiple constants are evaluated at compile time
+module PartialEval (optConstants) where
 
 import Syntax
+import RR
 
--- Interpreter: Optimize formula - sum up constant terms
---   This is an interpreter with additional state
-instance (Syn1 repr) => Syn1 (repr, Bool, Int) where
-    lit n = (lit n, True, n)
-    neg (e, b, n) = (neg e, b, negate n)
-    add (e1, b1, n1) (e2, b2, n2)
-        | bb1 && bb2 = (lit sum12, True, sum12)
-        | otherwise = (add e1 e2, False, sum12)
-      where
-        (_, bb1,nn1) = optAdd (e1, b1, n1)
-        (_, bb2,nn2) = optAdd (e2, b2, n2)
-        sum12 = nn1 + nn2
-    sub (e1, b1, n1) (e2, b2, n2)
-        | bb1 && bb2 = (lit sub12, True, sub12)
-        | otherwise = (add e1 e2, False, sub12)
-      where
-        (_, bb1,nn1) = optAdd (e1, b1, n1)
-        (_, bb2,nn2) = optAdd (e2, b2, n2)
-        sub12 = nn1 - nn2
-    qprint e = e
+-- Data structure to optimize constants
+data OptConst repr a where
+  Unk :: repr a -> OptConst repr a
+  Opt :: Int -> OptConst repr Int
 
-optAdd :: (repr, Bool, Int) -> (repr, Bool, Int)
-optAdd = id
+-- Define (OptConst repr) as an instance of RR
+instance Expr repr => RR OptConst repr where
+  bwd (Unk e) = e
+  bwd (Opt n) = int n
+  fwd = Unk
 
-fst3 :: Syn1 repr => (repr, Bool, Int) -> repr
-fst3 (r, _, _) = r
+-- Define an interpreter to optimize arithmetic operations
+instance Expr repr => Expr (OptConst repr) where
+  int n = Opt n
+  neg (Opt n) = Opt $ negate n
+  neg (Unk n) = Unk $ neg n
+  add (Opt n1) (Opt n2) = Opt (n1 + n2)
+  add e1 e2  = Unk $ add (bwd e1) (bwd e2)
+  sub (Opt n1) (Opt n2) = Opt (n1 - n2)
+  sub e1 e2  = Unk $ sub (bwd e1) (bwd e2)
+  qprint e1  = Unk $ qprint (bwd e1)
+  getInt es  = Unk $ getInt es
 
-optimizeAdd :: Syn1 repr => (repr, Bool, Int) -> repr
-optimizeAdd e = fst3 $ optAdd e
+-- Optimize constants
+optConst:: Expr repr => OptConst repr a -> repr a
+optConst = bwd

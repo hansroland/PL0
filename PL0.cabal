@@ -39,6 +39,7 @@ library libpl0
     exposed-modules:  Syntax
                       , Eval
                       , Print
+                      , RR
                       , PartialEval
                       -- , Lexer
                       -- , Parser
@@ -87,7 +88,7 @@ test-suite pl0-test
         , SpecLexer
         , SpecEval
         , SpecPrint
-        -- , SpecPartialEval
+        , SpecPartialEval
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

@@ -6,7 +6,7 @@
 
 -- Evaluator (aka Language Interpreter) for the PL0 language
 
-module Eval where
+module Eval (eval) where
 
 import Control.Monad.IO.Class
 import Syntax

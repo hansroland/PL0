@@ -2,7 +2,7 @@
 
 -- Print - Module with Print interpreters
 
-module Print where
+module Print (quickprint, debugprint)  where
 
 import Syntax ( Expr(..) )
 
