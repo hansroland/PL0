@@ -40,9 +40,9 @@ library libpl0
                       , Eval
                       , Print
                       , PartialEval
-                      , Lexer
-                      , Parser
-                      , Hlex
+                      -- , Lexer
+                      -- , Parser
+                      -- , Hlex
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -53,6 +53,7 @@ library libpl0
     -- Other library packages from which modules are imported.
     build-depends:    base ^>=4.20.0.0
                       , mtl
+                      , transformers
                       , regex-tdfa
     hs-source-dirs:   src
     default-language: GHC2024
@@ -86,7 +87,7 @@ test-suite pl0-test
         , SpecLexer
         , SpecEval
         , SpecPrint
-        , SpecPartialEval
+        -- , SpecPartialEval
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

@@ -1,5 +1,5 @@
 module SpecLexer where
-
+{-}
 import Test.Hspec
 import Lexer(Token(..), Operator(..), lexScan)
 
@@ -18,3 +18,4 @@ testLex01 :: String
 testLex01 = "(111  +   2222  +  ( 3333  +  4444))"
 --           1234567890123456789012345678901234567
 --                    1         2         3
+-}

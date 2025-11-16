@@ -1,42 +1,53 @@
--- Print - Module with Print interpreters
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+
+-- Print - Module with Print interpreters
 
 module Print where
 
-import Syntax
+import Syntax ( Expr(..) )
+
+-- See also: https://stackoverflow.com/questions/25733889/how-to-reinterpret-a-dsl-term-in-final-tagless-approach
 
 -- The quickprint function should print the expression in the concrete syntax
 -- The input is supposed to be processed by the Language Parser
+newtype QP a = QP String deriving Show
+unQP :: QP a -> String
+unQP (QP x) = x
 
--- Define a quick printer. It produces an easy and quick string of a sentence.
-instance Syn1 String where
-    lit n
-          | n >= 0    = show n
-          | otherwise = concat ["(", show n, ")"]
-    neg e = concat ["-", e]
-    add e1 e2 = concat [ "(", e1, " + ", e2, ")" ]
-    sub e1 e2 = concat [ "(", e1, " - ", e2,")" ]
-    qprint e = concat [ "qprint ", e ]
+instance Expr QP where
+    int n
+        | n >= 0    = QP (show n)
+        | otherwise = QP (concat ["(", show n, ")"])
+    -- bool b = R b
+    -- lam f = R (unR . f . R)
+    -- app e1 e2 = R( (unR e1) (unR e2) )
+    -- fix f = R( fx (unR . f . R)) where fx f = f (fx f)
+    neg e = QP $ concat ["-", unQP e]
+    add e1 e2 = QP ( concat["(", unQP e1, " + ", unQP e2, ")" ] )
+    sub e1 e2 = QP ( concat["(", unQP e1, " - ", unQP e2, ")" ] )
+    -- mul e1 e2 = R( (unR e1) * (unR e2) )
+    -- eq e1 e2 = R( (unR e1) == (unR e2) )
+    -- leq e1 e2 = R( (unR e1) <= (unR e2) )
+    -- if_ be et ee = R( if (unR be) then unR et else unR ee )
+    getInt p1 = QP (concat ["(getInt ",  "\"", p1, "\")"])
+    qprint e = QP $ concat ["qprint ", unQP e]
 
--- quickprint: Run the interpreter to create a quick print
--- Note: This is NOT a function of PL0
-quickprint :: String -> String
-quickprint = id
-
--- Define a debug printer. It shwos functions and values
-newtype StrDebug = StrDebug {undebug :: String}
-    deriving (Show, Semigroup, Monoid)
-
-instance Syn1 StrDebug where
-    lit n = StrDebug $ concat [ "(lit ", show n, ")"]
-    neg e = StrDebug $ concat ["neg (", undebug e , ")"]
-    add e1 e2 = StrDebug $ concat ["(add ", undebug e1, " ", undebug e2, ")"]
-    sub e1 e2 = StrDebug $ concat ["(sub ", undebug e1, " ", undebug e2, ")"]
-    qprint e = StrDebug $ concat [ "qprint ", undebug e ]
-strDebug :: StrDebug -> StrDebug
-strDebug = id
+quickprint :: QP a -> String
+quickprint = unQP
 
 
+-- Define a debug printer. It produces a output similar to the tagless final input syntax
+newtype DP a = DP String deriving Show
+unDP :: DP a -> String
+unDP (DP x) = x
+
+instance Expr DP where
+    int n = DP $ concat ["(int ", show n, ")"]
+    neg e = DP $ concat ["neg (", unDP e, ")"]
+    add e1 e2 = DP $ concat [ "(add ", unDP e1, " ", unDP e2, ")" ]
+    sub e1 e2 = DP $ concat [ "(sub ", unDP e1, " ", unDP e2,")" ]
+    getInt p = DP $ concat [ "(getInt \"", p,   "\")"]
+    qprint e = DP $ concat [ "qprint ", unDP e ]
+
+debugprint :: DP a -> String
+debugprint = unDP

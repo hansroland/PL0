@@ -1,3 +1,6 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications #-}
+
 module SpecEval where
 
 import Test.Hspec
@@ -6,11 +9,10 @@ import Eval
 
 import System.IO.Silently
 
--- This is very hacky! But we get always 2 lines!!!
--- I don't know yet why !!!
-evaltest :: Expr -> IO String
+-- Run the test in the IO Monad
+evaltest :: IO a -> IO String
 evaltest e = do
-    (output, _) <- capture $ evalExpr $ toExpr e
+    output <- capture_ $ ((eval e) )
     pure $ checkdata $ lines output
   where
     checkdata :: [String] -> String
@@ -20,31 +22,34 @@ evaltest e = do
 specEval :: Spec
 specEval = do
   describe "Tests for module Eval" $ do
-    it "evaltest testLit01" $ do
-        evaltest testLit01 `shouldReturn` "34"
-    it "evaltest testNeg01" $ do
-        evaltest testNeg01 `shouldReturn` "-42"
-    it "evaltest testNeg02" $ do
-        evaltest testNeg02 `shouldReturn` "5"
-    it "evaltest testAdd01" $ do
-        evaltest testAdd01 `shouldReturn` "42"
-    it "evaltest testAdd02" $ do
-        evaltest testAdd02 `shouldReturn` "10"
+    it "eval testLit01" $ do
+        eval testLit01  `shouldReturn` 34
+    it "eval testNeg01" $ do
+        eval testNeg01 `shouldReturn` -42
+    it "eval testNeg02" $ do
+        eval testNeg02 `shouldReturn` 5
+    it "eval testAdd01" $ do
+        eval testAdd01 `shouldReturn` 42
+    it "eval testAdd02" $ do
+        eval testAdd02 `shouldReturn` 10
 
-testLit01 :: Syn1 r1 => r1
-testLit01 = qprint (lit 34)
+    it "evaltest testQprint01" $ do
+        ((evaltest testQprint01):: IO String) `shouldReturn` "42"
 
-testNeg01 :: Syn1 r1 => r1
-testNeg01 = qprint (neg (lit 42))
+testLit01 :: Expr repr => repr Int
+testLit01 = int 34
 
-testNeg02 :: Syn1 r1 => r1
-testNeg02 = qprint (add (lit 8) (neg (add (lit 1) (lit 2))))
+testNeg01 :: Expr repr => repr Int
+testNeg01 = neg (int 42)
 
-testAdd01 :: Syn1 r1  => r1
-testAdd01 = qprint (add (lit 8) (lit 34))
+testNeg02 :: Expr repr => repr Int
+testNeg02 = add (int 8) (neg (add (int 1) (int 2)))
 
-testAdd02 :: Syn1 r1  => r1
-testAdd02 = qprint (add (add (lit 1) (lit 2)) (add (lit 3) (lit 4)))
+testAdd01 :: Expr repr => repr Int
+testAdd01 = add (int 8) (int 34)
 
+testAdd02 :: Expr repr => repr Int
+testAdd02 = add (add (int 1) (int 2)) (add (int 3) (int 4))
 
-
+testQprint01 :: Expr repr => repr ()
+testQprint01 = qprint (int 42)
